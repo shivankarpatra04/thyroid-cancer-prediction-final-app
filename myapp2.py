@@ -45,7 +45,7 @@ def thyroid_cancer_prediction_app():
     X = ThyroidCancerDF[['mean_radius', 'mean_texture', 'mean_perimeter', 'mean_area', 'mean_smoothness']]
     Y = ThyroidCancerDF['diagnosis']
 
-    clf = RandomForestClassifier()
+    clf = RandomForestClassifier(criterion='log_loss', max_depth=4, n_estimators=450)
     clf.fit(X, Y)
 
     prediction = clf.predict(input_df)
