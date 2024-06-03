@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+import pickle
 import streamlit as st
 
 def thyroid_cancer_prediction_app():
@@ -34,22 +34,16 @@ def thyroid_cancer_prediction_app():
 
     st.subheader('User Input features')
 
-    ThyroidCancerDF = pd.read_csv("Thyroid_train.csv")
-
     st.write('Awaiting CSV file to be uploaded. Currently using example input parameters (shown below).')
     st.write(input_df)
 
-    # Preprocess diagnosis column (if diagnosis is 'M' or 'B')
-    ThyroidCancerDF['diagnosis'] = ThyroidCancerDF['diagnosis'].replace({'malignant': 0, 'benign': 1})
+    # Load the pre-trained model from the pickle file
+    with open('model_pipeline.pkl', 'rb') as file:
+        model = pickle.load(file)
 
-    X = ThyroidCancerDF[['mean_radius', 'mean_texture', 'mean_perimeter', 'mean_area', 'mean_smoothness']]
-    Y = ThyroidCancerDF['diagnosis']
-
-    clf = RandomForestClassifier(criterion='log_loss', max_depth=4, n_estimators=450)
-    clf.fit(X, Y)
-
-    prediction = clf.predict(input_df)
-    prediction_proba = clf.predict_proba(input_df)
+    # Make predictions
+    prediction = model.predict(input_df)
+    prediction_proba = model.predict_proba(input_df)
 
     st.subheader('Prediction')
     if prediction[0] == 0:
