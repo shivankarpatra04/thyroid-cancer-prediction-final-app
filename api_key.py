@@ -1,0 +1,1 @@
+Gemmini_api_key = "AIzaSyAmtOTvAZJ067CIGRn-WBF7k8g-mPg9jjo"

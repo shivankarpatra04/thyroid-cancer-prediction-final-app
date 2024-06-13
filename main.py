@@ -5,7 +5,7 @@ from multiapp import MultiApp
 
 # Now you can import your module
 def main_page():
-    import myapp2,home,data
+    import myapp2,home,data,chat_bot
 
     main = MultiApp()
 
@@ -16,4 +16,5 @@ def main_page():
     main.add_app("Model",myapp2.thyroid_cancer_prediction_app)
     main.add_app("About Thyroid Cancer",home.show_description)
     main.add_app("Training Dataset", data.show_data)
+    main.add_app("Chat Assistant", chat_bot.chat_assistant)
     main.run()

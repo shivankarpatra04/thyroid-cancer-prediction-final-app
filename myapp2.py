@@ -1,6 +1,7 @@
 import pandas as pd
 import pickle
 import streamlit as st
+import streamlit.components.v1 as components
 
 def thyroid_cancer_prediction_app():
     st.write("""
