@@ -1,63 +1,96 @@
-# app.py
-
 import streamlit as st
-from database import create_table, add_user, login_user
 from main import main_page
+import pymysql
 
-# Create the users table if it doesn't exist
-create_table()
+# MySQL database connection
+def get_connection():
+    return pymysql.connect(
+        host='localhost',
+        user='root',
+        password='123456',
+        database='streamlit_app',
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
-def main():
-    st.title("Thyroid Cancer Prediction Web App")
+# Initialize session state for login
+if 'logged_in' not in st.session_state:
+    st.session_state["logged_in"] = False
 
-    # Initialize session state for login status and username
-    if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False
-        st.session_state['username'] = ''
+if 'username' not in st.session_state:
+    st.session_state["username"] = None
 
-    def logout():
-        st.session_state['logged_in'] = False
-        st.session_state['username'] = ''
-        st.experimental_rerun()
+# Sign up form
+def sign_up():
+    st.title("Sign Up")
 
-    def login(username, password):
-        user = login_user(username, password)
-        if user:
-            st.success(f"Welcome {username}")
-            st.session_state['logged_in'] = True
-            st.session_state['username'] = username
-            st.experimental_rerun()
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Sign Up"):
+        if username and password:
+            connection = get_connection()
+            with connection.cursor() as cursor:
+                # Check if username already exists
+                cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
+                user = cursor.fetchone()
+                if user:
+                    st.error("Username already exists.")
+                else:
+                    # Insert new user
+                    cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+                    connection.commit()
+                    st.success("User registered successfully!")
+            connection.close()
         else:
-            st.error("Invalid Username or Password")
+            st.error("Please provide a username and password.")
 
+# Login form
+def login():
+    st.title("Login")
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username and password:
+            connection = get_connection()
+            with connection.cursor() as cursor:
+                # Authenticate user
+                cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+                user = cursor.fetchone()
+                if user:
+                    st.session_state["logged_in"] = True
+                    st.session_state["username"] = username
+                    st.success("Login successful!")
+                    st.experimental_rerun()  # Refresh the page after successful login
+                else:
+                    st.error("Incorrect username or password.")
+            connection.close()
+        else:
+            st.error("Please provide a username and password.")
+
+# Logout function
+def logout():
+    st.session_state["logged_in"] = False
+    st.session_state["username"] = None
+    st.success("Logged out successfully!")
+    st.experimental_rerun()
+
+# Main application
+def main():
     if st.session_state['logged_in']:
-        st.sidebar.write(f"Logged in as {st.session_state['username']}")
+        st.sidebar.title(f"Welcome, {st.session_state['username']}!")
         if st.sidebar.button("Logout"):
             logout()
         main_page()
     else:
-        menu = ["Login", "Sign Up"]
-        choice = st.sidebar.selectbox("Menu", menu)
+        st.sidebar.title("Navigation")
+        option = st.sidebar.selectbox("Choose a page", ["Sign Up", "Login"])
 
-        if choice == "Login":
-            st.subheader("Login Section")
+        if option == "Sign Up":
+            sign_up()
+        elif option == "Login":
+            login()
 
-            username = st.text_input("Username")
-            password = st.text_input("Password", type='password')
-
-            if st.button("Login"):
-                login(username, password)
-
-        elif choice == "Sign Up":
-            st.subheader("Create New Account")
-
-            new_user = st.text_input("Username")
-            new_password = st.text_input("Password", type='password')
-
-            if st.button("Sign Up"):
-                add_user(new_user, new_password)
-                st.success("You have successfully created an account")
-                st.info("Go to Login Menu to login")
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
