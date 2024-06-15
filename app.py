@@ -5,10 +5,10 @@ import pymysql
 # MySQL database connection
 def get_connection():
     return pymysql.connect(
-        host='localhost',
-        user='root',
-        password='123456',
-        database='streamlit_app',
+        host=st.secrets["DB_HOST"],
+        user=st.secrets["DB_USER"],
+        password=st.secrets["DB_PASSWORD"],
+        database=st.secrets["DB_NAME"],
         cursorclass=pymysql.cursors.DictCursor
     )
 
