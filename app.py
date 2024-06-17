@@ -1,22 +1,21 @@
 import streamlit as st
+import mysql.connector
+from mysql.connector import OperationalError, Error
 from main import main_page
-import pymysql
-from pymysql.err import OperationalError, MySQLError
 
 # MySQL database connection
 def get_connection():
     try:
-        connection = pymysql.connect(
+        connection = mysql.connector.connect(
             host=st.secrets["db_host"],
             user=st.secrets["db_username"],
             password=st.secrets["db_password"],
-            database=st.secrets["db_name"],
-            cursorclass=pymysql.cursors.DictCursor
+            database=st.secrets["db_name"]
         )
         return connection
     except OperationalError as e:
         st.error(f"Operational error: {e}")
-    except MySQLError as e:
+    except Error as e:
         st.error(f"MySQL error: {e}")
     except Exception as e:
         st.error(f"Unexpected error: {e}")
@@ -40,20 +39,21 @@ def sign_up():
             connection = get_connection()
             if connection:
                 try:
-                    with connection.cursor() as cursor:
-                        # Check if username already exists
-                        cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
-                        user = cursor.fetchone()
-                        if user:
-                            st.error("Username already exists.")
-                        else:
-                            # Insert new user
-                            cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
-                            connection.commit()
-                            st.success("User registered successfully!")
-                except MySQLError as e:
+                    cursor = connection.cursor(dictionary=True)
+                    # Check if username already exists
+                    cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
+                    user = cursor.fetchone()
+                    if user:
+                        st.error("Username already exists.")
+                    else:
+                        # Insert new user
+                        cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+                        connection.commit()
+                        st.success("User registered successfully!")
+                except Error as e:
                     st.error(f"MySQL error: {e}")
                 finally:
+                    cursor.close()
                     connection.close()
         else:
             st.error("Please provide a username and password.")
@@ -70,20 +70,21 @@ def login():
             connection = get_connection()
             if connection:
                 try:
-                    with connection.cursor() as cursor:
-                        # Authenticate user
-                        cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
-                        user = cursor.fetchone()
-                        if user:
-                            st.session_state["logged_in"] = True
-                            st.session_state["username"] = username
-                            st.success("Login successful!")
-                            st.experimental_rerun()  # Refresh the page after successful login
-                        else:
-                            st.error("Incorrect username or password.")
-                except MySQLError as e:
+                    cursor = connection.cursor(dictionary=True)
+                    # Authenticate user
+                    cursor.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+                    user = cursor.fetchone()
+                    if user:
+                        st.session_state["logged_in"] = True
+                        st.session_state["username"] = username
+                        st.success("Login successful!")
+                        st.experimental_rerun()  # Refresh the page after successful login
+                    else:
+                        st.error("Incorrect username or password.")
+                except Error as e:
                     st.error(f"MySQL error: {e}")
                 finally:
+                    cursor.close()
                     connection.close()
         else:
             st.error("Please provide a username and password.")
